@@ -1,0 +1,60 @@
+import requests
+import os
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
+PRODUCT_HUNT_BASE_URL = "https://api.producthunt.com/v2/api/graphql"
+
+def fetch_product_hunt_posts(industry, product_type):
+    """Fetches the top 10 Product Hunt posts matching the given industry and product type."""
+
+    developer_token = os.getenv("PRODUCT_HUNT_DEVELOPER_TOKEN")
+
+    # Updated GraphQL Query
+    query = """
+    query {
+      posts(first: 10, order: VOTES) {
+        edges {
+          node {
+            id
+            name
+            tagline
+            votesCount
+            website
+            commentsCount
+          }
+        }
+      }
+    }
+    """
+
+    # Send GraphQL Request (No filter variable)
+    headers = {"Authorization": f"Bearer {developer_token}"}
+    response = requests.post(
+        PRODUCT_HUNT_BASE_URL,
+        json={"query": query},  
+        headers=headers
+    )
+    response.raise_for_status()
+
+    # Process Results
+    try:
+        data = response.json()
+        print(json.dumps(data, indent=2))  # Print raw data for debugging
+
+        posts = [edge["node"] for edge in data["data"]["posts"]["edges"]]
+        return posts
+    except KeyError:
+        print("Unexpected API response format.")
+        return []
+
+
+
+# Example Usage:
+if __name__ == "__main__":
+    industry = "tech"
+    product_type = "saas"
+    posts = fetch_product_hunt_posts(industry, product_type)
+    print(json.dumps(posts, indent=2))
